@@ -28,9 +28,9 @@ WriteDeclaration::WriteDeclaration(Uic *uic)  :
 void WriteDeclaration::acceptUI(DomUI *node)
 {
     // remove any left-over C++ namespaces
-    const QString qualifiedClassName = "Ui_"_L1 + node->elementClass()
-        + m_option.postfix;
-    m_output << "class " << language::fixClassName(qualifiedClassName) << "(object):\n";
+    const QString qualifiedClassName = node->elementClass() + m_option.postfix;
+    const QString superClass = node->elementWidget()->attributeClass();
+    m_output << "class " << language::fixClassName(qualifiedClassName) << "(" << superClass << "):\n";
 
     TreeWalker::acceptWidget(node->elementWidget());
     if (const DomButtonGroups *domButtonGroups = node->elementButtonGroups())
