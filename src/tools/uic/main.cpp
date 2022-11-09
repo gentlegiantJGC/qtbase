@@ -71,10 +71,10 @@ int runUic(int argc, char *argv[])
     includeOption.setValueName(QStringLiteral("include-file"));
     parser.addOption(includeOption);
 
-    QCommandLineOption generatorOption(QStringList() << QStringLiteral("g") << QStringLiteral("generator"));
-    generatorOption.setDescription(QStringLiteral("Select generator."));
-    generatorOption.setValueName(QStringLiteral("python|cpp"));
-    parser.addOption(generatorOption);
+    //QCommandLineOption generatorOption(QStringList() << QStringLiteral("g") << QStringLiteral("generator"));
+    //generatorOption.setDescription(QStringLiteral("Select generator."));
+    //generatorOption.setValueName(QStringLiteral("python|cpp"));
+    //parser.addOption(generatorOption);
 
     QCommandLineOption connectionsOption(QStringList{QStringLiteral("c"), QStringLiteral("connections")});
     connectionsOption.setDescription(QStringLiteral("Connection syntax."));
@@ -125,11 +125,12 @@ int runUic(int argc, char *argv[])
     if (parser.isSet(rcPrefixOption))
         driver.option().rcPrefix = 1;
 
-    Language language = Language::Cpp;
-    if (parser.isSet(generatorOption)) {
-        if (parser.value(generatorOption).compare("python"_L1) == 0)
-            language = Language::Python;
-    }
+    //Language language = Language::Cpp;
+    //if (parser.isSet(generatorOption)) {
+    //    if (parser.value(generatorOption).compare("python"_L1) == 0)
+    //        language = Language::Python;
+    //}
+    Language language = Language::Python;
     language::setLanguage(language);
 
     QString inputFile;
