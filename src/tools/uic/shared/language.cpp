@@ -310,12 +310,36 @@ QTextStream &operator<<(QTextStream &str, const repeat &r)
     return str;
 }
 
-startFunctionDefinition1::startFunctionDefinition1(const char *name, const QString &parameterType,
-                                                   const QString &parameterName,
-                                                   const QString &indent,
-                                                   const char *returnType) :
+startFunctionDefinition0::startFunctionDefinition0(
+    const char* name, 
+    const QString& indent,
+    const char* returnType) :
+    m_name(name), m_indent(indent), m_return(returnType)
+{
+}
+
+QTextStream& operator<<(QTextStream& str, const startFunctionDefinition0& f)
+{
+    switch (language()) {
+    case Language::Cpp:
+        str << (f.m_return ? f.m_return : "void") << ' ' << f.m_name << '()' << '\n' << f.m_indent << "{\n";
+        break;
+    case Language::Python:
+        str << "def " << f.m_name << "(self):\n";
+        break;
+    }
+    return str;
+}
+
+startFunctionDefinition1::startFunctionDefinition1(
+    const char *name, const QString &parameterType,
+    const QString &parameterName,
+    const QString &indent,
+    const QString &parameterDefault,
+    const char *returnType
+) :
     m_name(name), m_parameterType(parameterType), m_parameterName(parameterName),
-    m_indent(indent), m_return(returnType)
+    m_indent(indent), m_return(returnType), m_parameterDefault(parameterDefault)
 {
 }
 
@@ -330,7 +354,11 @@ QTextStream &operator<<(QTextStream &str, const startFunctionDefinition1 &f)
         str << f.m_parameterName << ')' << '\n' << f.m_indent << "{\n";
         break;
     case Language::Python:
-        str << "def " << f.m_name << "(self, " << f.m_parameterName << "):\n";
+        str << "def " << f.m_name << "(self, " << f.m_parameterName;
+        if (f.m_parameterDefault.size()) {
+            str << "=" << f.m_parameterDefault;
+        }
+        str << "):\n";
         break;
     }
     return str;
@@ -347,7 +375,7 @@ QTextStream &operator<<(QTextStream &str, const endFunctionDefinition &f)
         str << "} // " << f.m_name << "\n\n";
         break;
     case Language::Python:
-        str << "# " << f.m_name << "\n\n";
+        str << "\n";
         break;
     }
     return str;

@@ -121,18 +121,35 @@ private:
     const char m_char;
 };
 
+class startFunctionDefinition0 {
+public:
+    explicit startFunctionDefinition0(const char* name, 
+        const QString& indent,
+        const char* returnType = nullptr);
+
+    friend QTextStream& operator<<(QTextStream& str, const startFunctionDefinition0& f);
+private:
+    const char* m_name;
+    const QString& m_indent;
+    const char* m_return;
+};
+
 class startFunctionDefinition1 {
 public:
-    explicit startFunctionDefinition1(const char *name, const QString &parameterType,
-                                      const QString &parameterName,
-                                      const QString &indent,
-                                      const char *returnType = nullptr);
+    explicit startFunctionDefinition1(
+        const char *name, const QString &parameterType,
+        const QString &parameterName,
+        const QString &indent,
+        const QString &parameterDefault = {},
+        const char *returnType = nullptr
+    );
 
     friend QTextStream &operator<<(QTextStream &str, const startFunctionDefinition1 &f);
 private:
     const char *m_name;
     const QString &m_parameterType;
     const QString &m_parameterName;
+    const QString m_parameterDefault;
     const QString &m_indent;
     const char *m_return;
 };
