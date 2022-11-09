@@ -495,9 +495,15 @@ void WriteInitialization::acceptUI(DomUI *node)
 
     const QString widgetClassName = node->elementWidget()->attributeClass();
 
+    m_output << m_option.indent
+        << language::startFunctionDefinition1("__init__", u""_s, u"parent"_s, m_option.indent, language::nullPtr)
+        << m_indent << widgetClassName << ".__init__(self, parent=parent)" << language::eol
+        << m_indent << language::self << "__setupUi(self)" << language::eol
+        << m_option.indent << language::endFunctionDefinition("__init__");
+
     const QString parameterType = widgetClassName + " *"_L1;
     m_output << m_option.indent
-             << language::startFunctionDefinition1("setupUi", parameterType, varName, m_option.indent);
+             << language::startFunctionDefinition1("__setupUi", parameterType, varName, m_option.indent);
 
     const QStringList connections = m_uic->databaseInfo()->connections();
     for (const auto &connection : connections) {
@@ -535,7 +541,7 @@ void WriteInitialization::acceptUI(DomUI *node)
         m_output << "\n" << m_delayedActionInitialization;
 
     m_output << "\n" << m_indent << language::self
-        << "retranslateUi(" << varName << ')' << language::eol;
+        << "retranslateUi()" << language::eol;
 
     if (node->elementConnections())
         acceptConnections(node->elementConnections());
@@ -548,7 +554,7 @@ void WriteInitialization::acceptUI(DomUI *node)
             << "connectSlotsByName(" << varName << ')' << language::eol;
     }
 
-    m_output << m_option.indent << language::endFunctionDefinition("setupUi");
+    m_output << m_option.indent << language::endFunctionDefinition("__setupUi");
 
     if (!m_mainFormUsedInRetranslateUi) {
         if (language::language() == Language::Cpp) {
@@ -566,8 +572,13 @@ void WriteInitialization::acceptUI(DomUI *node)
     }
 
     m_output << m_option.indent
-           << language::startFunctionDefinition1("retranslateUi", parameterType, varName, m_option.indent)
-           << m_refreshInitialization
+        << language::startFunctionDefinition1("__retranslateUi", parameterType, varName, m_option.indent)
+        << m_refreshInitialization
+        << m_option.indent << language::endFunctionDefinition("__retranslateUi");
+
+    m_output << m_option.indent
+           << language::startFunctionDefinition0("retranslateUi", m_option.indent)
+           << m_indent << language::self << "__retranslateUi(self)" << language::eol
            << m_option.indent << language::endFunctionDefinition("retranslateUi");
 
     m_layoutChain.pop();
