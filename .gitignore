@@ -273,6 +273,8 @@ tags
 *.exe.embed.manifest
 *.exe_manifest.rc
 *.exe_manifest.res
+.vs/
+out/
 
 # Visual Studio Code generated files
 .vscode
@@ -328,6 +330,7 @@ wrapper.bat
 # cmake related artifacts
 /build*
 CMakeFiles
+CMakeSettings.json
 CTestTestfile.cmake
 cmake_install.cmake
 *_autogen
