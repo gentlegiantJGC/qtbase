@@ -490,7 +490,7 @@ void WriteInitialization::acceptUI(DomUI *node)
     const QString className = node->elementClass() + m_option.postfix;
     m_generatedClass = className;
 
-    const QString varName = m_driver->findOrInsertWidget(node->elementWidget());
+    const QString varName = u"self"_s;
     m_mainFormVarName = varName;
 
     const QString widgetClassName = node->elementWidget()->attributeClass();
@@ -604,6 +604,7 @@ void WriteInitialization::acceptWidget(DomWidget *node)
     m_layoutMarginType = m_widgetChain.size() == 1 ? TopLevelMargin : ChildMargin;
     const QString className = node->attributeClass();
     const QString varName = m_driver->findOrInsertWidget(node);
+    const QString refName = m_widgetChain.size() == 1 ? u"self"_s : varName;
 
     QString parentWidget, parentClass;
     if (m_widgetChain.top()) {
@@ -619,7 +620,10 @@ void WriteInitialization::acceptWidget(DomWidget *node)
     const auto *cwi = m_uic->customWidgetsInfo();
 
     if (m_widgetChain.size() != 1) {
-        m_output << m_indent << varName << " = " << language::operatorNew
+        if (m_widgetChain.size() == 2) {
+            parentWidget = u"self"_s;
+        }
+        m_output << m_indent << refName << " = " << language::operatorNew
             << language::fixClassName(cwi->realClassName(className))
             << '(' << parentWidget << ')' << language::eol;
     }
@@ -638,7 +642,7 @@ void WriteInitialization::acceptWidget(DomWidget *node)
     }
 
     if (m_uic->isButton(className))
-        addButtonGroup(node, varName);
+        addButtonGroup(node, refName);
 
     writeProperties(varName, className, node->elementProperty());
 
@@ -674,16 +678,16 @@ void WriteInitialization::acceptWidget(DomWidget *node)
     if (cwi->extends(parentClass, "QMainWindow")) {
         if (cwi->extends(className, "QMenuBar")) {
             m_output << m_indent << parentWidget << language::derefPointer
-                << "setMenuBar(" << varName << ')' << language::eol;
+                << "setMenuBar(" << refName << ')' << language::eol;
         } else if (cwi->extends(className, "QToolBar")) {
             m_output << m_indent << parentWidget << language::derefPointer << "addToolBar("
-                << language::enumValue(toolBarAreaStringFromDOMAttributes(attributes)) << varName
+                << language::enumValue(toolBarAreaStringFromDOMAttributes(attributes)) << refName
                 << ')' << language::eol;
 
             if (const DomProperty *pbreak = attributes.value("toolBarBreak"_L1)) {
                 if (pbreak->elementBool() == "true"_L1) {
                     m_output << m_indent << parentWidget << language::derefPointer
-                        << "insertToolBarBreak(" <<  varName << ')' << language::eol;
+                        << "insertToolBarBreak(" <<  refName << ')' << language::eol;
                 }
             }
 
@@ -693,13 +697,13 @@ void WriteInitialization::acceptWidget(DomWidget *node)
                 m_output << "Qt" << language::qualifier
                     << language::dockWidgetArea(pstyle->elementNumber()) << ", ";
             }
-            m_output << varName << ")" << language::eol;
+            m_output << refName << ")" << language::eol;
         } else if (m_uic->customWidgetsInfo()->extends(className, "QStatusBar")) {
             m_output << m_indent << parentWidget << language::derefPointer
-                << "setStatusBar(" << varName << ')' << language::eol;
+                << "setStatusBar(" << refName << ')' << language::eol;
         } else {
                 m_output << m_indent << parentWidget << language::derefPointer
-                    << "setCentralWidget(" << varName << ')' << language::eol;
+                    << "setCentralWidget(" << refName << ')' << language::eol;
         }
     }
 
@@ -709,9 +713,9 @@ void WriteInitialization::acceptWidget(DomWidget *node)
         addPageMethod = cwi->simpleContainerAddPageMethod(parentClass);
     if (!addPageMethod.isEmpty()) {
         m_output << m_indent << parentWidget << language::derefPointer
-            << addPageMethod << '(' << varName << ')' << language::eol;
+            << addPageMethod << '(' << refName << ')' << language::eol;
     } else if (m_uic->customWidgetsInfo()->extends(parentClass, "QWizard")) {
-        addWizardPage(varName, node, parentWidget);
+        addWizardPage(refName, node, parentWidget);
     } else if (m_uic->customWidgetsInfo()->extends(parentClass, "QToolBox")) {
         const DomProperty *plabel = attributes.value("label"_L1);
         DomString *plabelString = plabel ? plabel->elementString() : nullptr;
@@ -719,19 +723,19 @@ void WriteInitialization::acceptWidget(DomWidget *node)
         if (const DomProperty *picon = attributes.value("icon"_L1))
             icon = ", "_L1 + iconCall(picon); // Side effect: Writes icon definition
         m_output << m_indent << parentWidget << language::derefPointer << "addItem("
-            << varName << icon << ", " << noTrCall(plabelString, pageDefaultString)
+            << refName << icon << ", " << noTrCall(plabelString, pageDefaultString)
             << ')' << language::eol;
 
         autoTrOutput(plabelString, pageDefaultString) << m_indent << parentWidget
             << language::derefPointer << "setItemText(" << parentWidget
-            << language::derefPointer << "indexOf("  << varName << "), "
+            << language::derefPointer << "indexOf("  << refName << "), "
             << autoTrCall(plabelString, pageDefaultString) << ')' << language::eol;
 
         if (DomProperty *ptoolTip = attributes.value("toolTip"_L1)) {
             autoTrOutput(ptoolTip->elementString())
                 << language::openQtConfig(toolTipConfigKey())
                 << m_indent << parentWidget << language::derefPointer << "setItemToolTip(" << parentWidget
-                << language::derefPointer << "indexOf(" << varName << "), "
+                << language::derefPointer << "indexOf(" << refName << "), "
                 << autoTrCall(ptoolTip->elementString()) << ')' << language::eol
                 << language::closeQtConfig(toolTipConfigKey());
         }
@@ -742,18 +746,18 @@ void WriteInitialization::acceptWidget(DomWidget *node)
         if (const DomProperty *picon = attributes.value("icon"_L1))
             icon = ", "_L1 + iconCall(picon); // Side effect: Writes icon definition
         m_output << m_indent << parentWidget << language::derefPointer << "addTab("
-            << varName << icon << ", " << language::emptyString << ')' << language::eol;
+            << refName << icon << ", " << language::emptyString << ')' << language::eol;
 
         autoTrOutput(ptitleString, pageDefaultString) << m_indent << parentWidget
             << language::derefPointer << "setTabText(" << parentWidget
-            << language::derefPointer << "indexOf(" << varName << "), "
+            << language::derefPointer << "indexOf(" << refName << "), "
             << autoTrCall(ptitleString, pageDefaultString) << ')' << language::eol;
 
         if (const DomProperty *ptoolTip = attributes.value("toolTip"_L1)) {
             autoTrOutput(ptoolTip->elementString())
                 << language::openQtConfig(toolTipConfigKey())
                 << m_indent << parentWidget << language::derefPointer << "setTabToolTip("
-                << parentWidget << language::derefPointer << "indexOf(" << varName
+                << parentWidget << language::derefPointer << "indexOf(" << refName
                 << "), " << autoTrCall(ptoolTip->elementString()) << ')' << language::eol
                 << language::closeQtConfig(toolTipConfigKey());
         }
@@ -761,7 +765,7 @@ void WriteInitialization::acceptWidget(DomWidget *node)
             autoTrOutput(pwhatsThis->elementString())
                 << language::openQtConfig(whatsThisConfigKey())
                 << m_indent << parentWidget << language::derefPointer << "setTabWhatsThis("
-                << parentWidget << language::derefPointer << "indexOf(" << varName
+                << parentWidget << language::derefPointer << "indexOf(" << refName
                 << "), " << autoTrCall(pwhatsThis->elementString()) << ')' << language::eol
                 << language::closeQtConfig(whatsThisConfigKey());
         }
@@ -797,7 +801,7 @@ void WriteInitialization::acceptWidget(DomWidget *node)
                 headerProperties << fakeProperty;
             }
         }
-        writeProperties(varName + language::derefPointer + "header()"_L1,
+        writeProperties(refName + language::derefPointer + "header()"_L1,
                         "QHeaderView"_L1, headerProperties,
                         WritePropertyIgnoreObjectName);
 
@@ -817,7 +821,7 @@ void WriteInitialization::acceptWidget(DomWidget *node)
                     headerProperties << fakeProperty;
                 }
             }
-            const QString headerVar = varName + language::derefPointer
+            const QString headerVar = refName + language::derefPointer
                 + headerPrefix + "()"_L1;
             writeProperties(headerVar, "QHeaderView"_L1,
                             headerProperties, WritePropertyIgnoreObjectName);
@@ -829,13 +833,13 @@ void WriteInitialization::acceptWidget(DomWidget *node)
 
     const QStringList zOrder = node->elementZOrder();
     for (const QString &name : zOrder) {
-        const QString varName = m_driver->widgetVariableName(name);
-        if (varName.isEmpty()) {
+        const QString refName = m_driver->widgetVariableName(name);
+        if (refName.isEmpty()) {
             fprintf(stderr, "%s: Warning: Z-order assignment: '%s' is not a valid widget.\n",
                     qPrintable(m_option.messagePrefix()),
                     name.toLatin1().data());
         } else {
-            m_output << m_indent << varName << language::derefPointer
+            m_output << m_indent << refName << language::derefPointer
                 << (language::language() != Language::Python ? "raise()" : "raise_()") << language::eol;
         }
     }
@@ -890,7 +894,7 @@ void WriteInitialization::acceptLayout(DomLayout *node)
     m_output << m_indent << varName << " = " << language::operatorNew << className << '(';
 
     if (!m_layoutChain.top() && !isGroupBox)
-        m_output << m_driver->findOrInsertWidget(m_widgetChain.top());
+        m_output << (m_widgetChain.size() == 2 ? u"self"_s : m_driver->findOrInsertWidget(m_widgetChain.top()));
 
     m_output << ")" << language::eol;
 
@@ -1181,11 +1185,12 @@ void WriteInitialization::writeProperties(const QString &varName,
                                           unsigned flags)
 {
     const bool isTopLevel = m_widgetChain.size() == 1;
+    const QString refName = isTopLevel ? u"self"_s : varName;
 
     if (m_uic->customWidgetsInfo()->extends(className, "QAxWidget")) {
         DomPropertyMap properties = propertyMap(lst);
         if (DomProperty *p = properties.value("control"_L1)) {
-            m_output << m_indent << varName << language::derefPointer << "setControl("
+            m_output << m_indent << refName << language::derefPointer << "setControl("
                 << language::qstring(toString(p->elementString()), m_dindent)
                 << ')' << language::eol;
         }
@@ -1196,10 +1201,10 @@ void WriteInitialization::writeProperties(const QString &varName,
         indent = m_option.indent;
         switch (language::language()) {
          case Language::Cpp:
-            m_output << m_indent << "if (" << varName << "->objectName().isEmpty())\n";
+            m_output << m_indent << "if (" << refName << "->objectName().isEmpty())\n";
             break;
         case Language::Python:
-           m_output << m_indent << "if not " << varName << ".objectName():\n";
+           m_output << m_indent << "if not " << refName << ".objectName():\n";
            break;
         }
     }
@@ -1208,7 +1213,7 @@ void WriteInitialization::writeProperties(const QString &varName,
         if (!language::self.isEmpty() && objectName.startsWith(language::self))
             objectName.remove(0, language::self.size());
         m_output << m_indent << indent
-            << varName << language::derefPointer << "setObjectName("
+            << refName << language::derefPointer << "setObjectName("
             << language::charliteral(objectName, m_dindent) << ')' << language::eol;
     }
 
@@ -1226,13 +1231,13 @@ void WriteInitialization::writeProperties(const QString &varName,
         // special case for the property `geometry': Do not use position
         if (isTopLevel && propertyName == "geometry"_L1 && p->elementRect()) {
             const DomRect *r = p->elementRect();
-            m_output << m_indent << varName << language::derefPointer << "resize("
+            m_output << m_indent << refName << language::derefPointer << "resize("
                 << r->elementWidth() << ", " << r->elementHeight() << ')' << language::eol;
             continue;
         }
         if (propertyName == "currentRow"_L1 // QListWidget::currentRow
                 && m_uic->customWidgetsInfo()->extends(className, "QListWidget")) {
-            m_delayedOut << m_indent << varName << language::derefPointer
+            m_delayedOut << m_indent << refName << language::derefPointer
                 << "setCurrentRow(" << p->elementNumber() << ')' << language::eol;
             continue;
         }
@@ -1242,13 +1247,13 @@ void WriteInitialization::writeProperties(const QString &varName,
         };
         if (propertyName == "currentIndex"_L1 // set currentIndex later
             && (m_uic->customWidgetsInfo()->extendsOneOf(className, currentIndexWidgets))) {
-            m_delayedOut << m_indent << varName << language::derefPointer
+            m_delayedOut << m_indent << refName << language::derefPointer
                 << "setCurrentIndex(" << p->elementNumber() << ')' << language::eol;
             continue;
         }
         if (propertyName == "tabSpacing"_L1
             && m_uic->customWidgetsInfo()->extends(className, "QToolBox")) {
-            m_delayedOut << m_indent << varName << language::derefPointer
+            m_delayedOut << m_indent << refName << language::derefPointer
                 << "layout()" << language::derefPointer << "setSpacing("
                 << p->elementNumber() << ')' << language::eol;
             continue;
@@ -1277,11 +1282,11 @@ void WriteInitialization::writeProperties(const QString &varName,
             if (p->elementEnum() == "Qt::Vertical"_L1)
                 shape = u"QFrame::VLine"_s;
 
-            m_output << m_indent << varName << language::derefPointer << "setFrameShape("
+            m_output << m_indent << refName << language::derefPointer << "setFrameShape("
                 << language::enumValue(shape) << ')' << language::eol;
             // QFrame Default is 'Plain'. Make the line 'Sunken' unless otherwise specified
             if (!frameShadowEncountered) {
-                m_output << m_indent << varName << language::derefPointer
+                m_output << m_indent << refName << language::derefPointer
                     << "setFrameShadow("
                     << language::enumValue("QFrame::Sunken"_L1)
                     << ')' << language::eol;
@@ -1335,7 +1340,7 @@ void WriteInitialization::writeProperties(const QString &varName,
             }
         } // QTextStream
 
-        QString varNewName = varName;
+        QString varNewName = refName;
 
         switch (p->kind()) {
         case DomProperty::Bool: {
@@ -1347,7 +1352,7 @@ void WriteInitialization::writeProperties(const QString &varName,
             break;
         case DomProperty::Cstring:
             if (propertyName == "buddy"_L1 && m_uic->customWidgetsInfo()->extends(className, "QLabel")) {
-                Buddy buddy = { varName, p->elementCstring() };
+                Buddy buddy = { refName, p->elementCstring() };
                 m_buddies.append(std::move(buddy));
             } else {
                 const bool useQByteArray = !stdset && language::language() == Language::Cpp;
@@ -1436,7 +1441,7 @@ void WriteInitialization::writeProperties(const QString &varName,
         case DomProperty::SizePolicy: {
             const QString spName = writeSizePolicy( p->elementSizePolicy());
             m_output << m_indent << spName << ".setHeightForWidth("
-                << varName << language::derefPointer << "sizePolicy().hasHeightForWidth())"
+                << refName << language::derefPointer << "sizePolicy().hasHeightForWidth())"
                 << language::eol;
 
             propertyValue = spName;
@@ -1457,7 +1462,7 @@ void WriteInitialization::writeProperties(const QString &varName,
         case DomProperty::String: {
             if (propertyName == "objectName"_L1) {
                 const QString v = p->elementString()->text();
-                if (v == varName)
+                if (v == refName)
                     break;
 
                 // ### qWarning("Deprecated: the property `objectName' is different from the variable name");
@@ -1553,7 +1558,7 @@ void WriteInitialization::writeProperties(const QString &varName,
             if (!configKey.isEmpty())
                o << language::closeQtConfig(configKey);
 
-            if (varName == m_mainFormVarName && &o == &m_refreshOut) {
+            if (refName == m_mainFormVarName && &o == &m_refreshOut) {
                 // this is the only place (currently) where we output mainForm name to the retranslateUi().
                 // Other places output merely instances of a certain class (which cannot be main form, e.g. QListWidget).
                 m_mainFormUsedInRetranslateUi = true;
@@ -1561,7 +1566,7 @@ void WriteInitialization::writeProperties(const QString &varName,
         }
     }
     if (leftMargin != -1 || topMargin != -1 || rightMargin != -1 || bottomMargin != -1) {
-        m_output << m_indent << varName << language::derefPointer << "setContentsMargins("
+        m_output << m_indent << refName << language::derefPointer << "setContentsMargins("
             << leftMargin << ", " << topMargin << ", "
             << rightMargin << ", " << bottomMargin << ")" << language::eol;
     }
