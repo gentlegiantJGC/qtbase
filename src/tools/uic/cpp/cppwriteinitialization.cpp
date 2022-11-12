@@ -497,13 +497,7 @@ void WriteInitialization::acceptUI(DomUI *node)
 
     m_output << m_option.indent
         << language::startFunctionDefinition1("__init__", u""_s, u"parent"_s, m_option.indent, language::nullPtr)
-        << m_indent << widgetClassName << ".__init__(self, parent=parent)" << language::eol
-        << m_indent << language::self << "_init_ui(self)" << language::eol
-        << m_option.indent << language::endFunctionDefinition("__init__");
-
-    const QString parameterType = widgetClassName + " *"_L1;
-    m_output << m_option.indent
-             << language::startFunctionDefinition1("_init_ui", parameterType, varName, m_option.indent);
+        << m_indent << widgetClassName << ".__init__(self, parent=parent)" << language::eol;
 
     const QStringList connections = m_uic->databaseInfo()->connections();
     for (const auto &connection : connections) {
@@ -554,7 +548,7 @@ void WriteInitialization::acceptUI(DomUI *node)
             << "connectSlotsByName(" << varName << ')' << language::eol;
     }
 
-    m_output << m_option.indent << language::endFunctionDefinition("_init_ui");
+    m_output << m_option.indent << language::endFunctionDefinition("__init__");
 
     if (!m_mainFormUsedInRetranslateUi) {
         if (language::language() == Language::Cpp) {
@@ -572,14 +566,9 @@ void WriteInitialization::acceptUI(DomUI *node)
     }
 
     m_output << m_option.indent
-        << language::startFunctionDefinition1("_localise_ui", parameterType, varName, m_option.indent)
+        << language::startFunctionDefinition0("localise", m_option.indent)
         << m_refreshInitialization
-        << m_option.indent << language::endFunctionDefinition("_localise_ui");
-
-    m_output << m_option.indent
-           << language::startFunctionDefinition0("localise", m_option.indent)
-           << m_indent << language::self << "_localise_ui(self)" << language::eol
-           << m_option.indent << language::endFunctionDefinition("localise");
+        << m_option.indent << language::endFunctionDefinition("localise");
 
     m_layoutChain.pop();
     m_widgetChain.pop();
