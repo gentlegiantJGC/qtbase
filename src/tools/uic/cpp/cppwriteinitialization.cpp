@@ -495,9 +495,8 @@ void WriteInitialization::acceptUI(DomUI *node)
 
     const QString widgetClassName = node->elementWidget()->attributeClass();
 
-    m_output << m_option.indent
-        << language::startFunctionDefinition1("__init__", u""_s, u"parent"_s, m_option.indent, language::nullPtr)
-        << m_indent << widgetClassName << ".__init__(self, parent=parent)" << language::eol;
+    m_output << m_option.indent << "def __init__(self, *args, **kwargs):" << language::eol;
+    m_output << m_indent << "super().__init__(*args, **kwargs)" << language::eol;
 
     const QStringList connections = m_uic->databaseInfo()->connections();
     for (const auto &connection : connections) {
@@ -620,6 +619,7 @@ void WriteInitialization::acceptWidget(DomWidget *node)
     const auto *cwi = m_uic->customWidgetsInfo();
 
     if (m_widgetChain.size() != 1) {
+        m_output << language::eol;
         if (m_widgetChain.size() == 2) {
             parentWidget = u"self"_s;
         }
@@ -650,7 +650,7 @@ void WriteInitialization::acceptWidget(DomWidget *node)
         && cwi->extends(className, "QMenu")) {
         initializeMenu(node, parentWidget);
     }
-
+    
     if (node->elementLayout().isEmpty())
         m_layoutChain.push(nullptr);
 
