@@ -891,7 +891,7 @@ void WriteInitialization::acceptLayout(DomLayout *node)
 
     bool isGroupBox = false;
 
-    m_output << m_indent << varName << " = " << language::operatorNew << className << '(';
+    m_output << "\n" << m_indent << varName << " = " << language::operatorNew << className << '(';
 
     if (!m_layoutChain.top() && !isGroupBox)
         m_output << (m_widgetChain.size() == 2 ? u"self"_s : m_driver->findOrInsertWidget(m_widgetChain.top()));
@@ -1033,7 +1033,7 @@ void WriteInitialization::acceptLayoutItem(DomLayoutItem *node)
     const QString layoutName = m_driver->findOrInsertLayout(layout);
     const QString itemName = m_driver->findOrInsertLayoutItem(node);
 
-    m_output << "\n" << m_indent << layoutName << language::derefPointer << ""
+    m_output << m_indent << layoutName << language::derefPointer << ""
         << layoutAddMethod(node->kind(), layout->attributeClass()) << '(';
 
     if (layout->attributeClass() == "QGridLayout"_L1) {
@@ -1055,7 +1055,7 @@ void WriteInitialization::acceptLayoutItem(DomLayoutItem *node)
         if (layout->attributeClass().contains("Box"_L1) && !node->attributeAlignment().isEmpty())
             m_output << ", 0, " << language::enumValue(node->attributeAlignment());
     }
-    m_output << ")" << language::eol << "\n";
+    m_output << ")" << language::eol;
 }
 
 void WriteInitialization::acceptActionGroup(DomActionGroup *node)
